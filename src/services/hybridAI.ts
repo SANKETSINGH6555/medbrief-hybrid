@@ -184,29 +184,29 @@ export async function runPrivacyShieldStage(
       '- Strip all exact dates (birthdates, admission dates, surgery dates, discharge dates, follow-up appointment dates). Replace them strictly with [REDACTED_DATE].\n' +
       '- Strip all Medical Record Numbers (MRNs), health IDs, phone numbers, and addresses. Replace them strictly with [REDACTED_ID].\n' +
       '- Never leak any raw name, exact date, MRN, or phone number in the output.\n\n' +
-      'PRIMARY DIRECTIVE 2: HIGH-ACCURACY MEDICAL TRANSLATION (DO NOT GUESS ABBREVIATIONS)\n' +
-      'Translate clinical jargon with exact anatomical and pharmacological precision into 8th-grade patient-friendly English:\n' +
-      '- "CABG x3": Triple coronary artery bypass graft surgery—using blood vessel bridges to detour around 3 blocked heart arteries.\n' +
-      '- "LIMA to LAD": Left Internal Mammary Artery = healthy artery from inside the chest wall repurposed to bypass the heart\'s front artery (LAD).\n' +
-      '- "SVG to OM1 / RCA / PDA": Saphenous Vein Graft = vein taken from the patient\'s leg to bypass blocked arteries on the side and back of the heart.\n' +
-      '- "LVEF" (e.g. 42%): Left Ventricular Ejection Fraction = heart pumping efficiency (normal is 50-70%; 42% means the heart pump is mildly weakened and needs rest and medications).\n' +
-      '- "Sternal Precautions & Pillow Splinting": Sternal precautions (no lifting >5 lbs, no pushing or pulling) protect the healing breastbone/sternum for 8 weeks. Splinting by hugging a heart pillow firmly against the chest supports and stabilizes the breastbone during coughing or sneezing, drastically reducing sharp pain and preventing incision separation.\n' +
-      '- "Diuretics (e.g. Furosemide / Lasix)": A water pill prescribed as-needed for sudden fluid retention, leg/ankle swelling (peripheral edema), or rapid weight gain (>3 lbs in 24 hours), which indicates excess fluid loading the heart.\n' +
-      '- "Beta-Blockers (e.g. Metoprolol Succinate)": Slows heart rate and relaxes blood vessels so the heart does not work too hard; require checking pulse and holding if heart rate <55.\n' +
-      '- "Dual Antiplatelet Therapy (Aspirin + Clopidogrel)": Two blood thinners working together to prevent blood clots from forming inside the new bypass grafts.\n' +
-      '- "Lipase (e.g. 1,450 U/L) & Pancreatitis": Lipase is a digestive enzyme made by the pancreas. Critical high levels indicate acute pancreatitis (sudden severe inflammation of the pancreas).\n' +
-      '- "Choledocholithiasis": Gallstones that have slipped into and blocked the common bile duct, trapping digestive enzymes and bile.\n' +
-      '- "NPO (Nothing by Mouth)": Strict pause on all food and drink so the pancreas can rest and stop pumping digestive enzymes.\n' +
-      '- "ERCP": A specialized scope procedure passed through the mouth into the digestive tract to safely extract gallstones lodged in the bile duct.\n' +
-      '- "Type 2 Diabetes, Stage 3 CKD, SGLT2 (Empagliflozin) & Metformin": Metformin and SGLT2 inhibitors protect the kidneys and regulate sugar, but must be paused during dehydration, illness, or contrast dye scans to prevent kidney injury or lactic acidosis.\n\n' +
+      'PRIMARY DIRECTIVE 2: HIGH-ACCURACY MEDICAL TRANSLATION (ZERO HALLUCINATION & ZERO SPECULATION)\n' +
+      '- Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text.\n' +
+      '- Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries.\n' +
+      '- "LIMA to LAD": Healthy chest wall artery redirected to bypass the heart\'s front blocked artery.\n' +
+      '- "SVG to OM1 / RCA / PDA": Leg vein graft used to bypass blocked arteries on the side and back of the heart.\n' +
+      '- "LVEF" (e.g. 42%): Left Ventricular Ejection Fraction = percentage of blood pumped per beat (normal 50-70%; 42% means heart pumping efficiency is mildly reduced and needs prescribed medications).\n' +
+      '- "Sternal Precautions & Pillow Splinting": Sternal precautions (no lifting >5 lbs, no pushing/pulling) protect the healing breastbone for 8 weeks. Splinting by hugging a heart pillow firmly against the chest supports the breastbone when coughing or sneezing to keep it stable and minimize sharp pain.\n' +
+      '- "Diuretics (e.g. Furosemide / Lasix)": Water pill prescribed as-needed for sudden fluid retention, leg/ankle swelling, or rapid weight gain (>3 lbs in 24 hours).\n' +
+      '- "Beta-Blockers (e.g. Metoprolol Succinate)": Slows heart rate and relaxes blood vessels; hold if heart rate <55.\n' +
+      '- "Dual Antiplatelet Therapy (Aspirin + Clopidogrel)": Two blood thinners working together to prevent blood clots in the new bypass blood vessels.\n' +
+      '- "Lipase & Pancreatitis": High digestive enzyme levels indicating acute inflammation of the pancreas.\n' +
+      '- "Choledocholithiasis": Gallstones that slipped into and blocked the common bile duct.\n' +
+      '- "NPO (Nothing by Mouth)": Strict pause on all food and liquids so the digestive organs can rest.\n' +
+      '- "ERCP": Scope procedure to remove gallstones lodged in the bile duct.\n' +
+      '- "Diabetes & CKD medications": Maintain good hydration; pause Metformin during dehydration or contrast dye scans to protect the kidneys.\n\n' +
       'OUTPUT FORMAT:\n' +
       '### SANITIZED CLINICAL TEXT\n' +
       '(Verbatim clinical note where all names are [REDACTED_NAME], dates are [REDACTED_DATE], and MRNs/phones/IDs are [REDACTED_ID])\n\n' +
       '### PATIENT-FRIENDLY SUMMARY\n' +
-      '(Warm, clear, accessible breakdown of the diagnosis, anatomical explanations, medication rules, and sternal/wound care precautions)',
+      '(Warm, clear breakdown translating strictly what is in the note. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries. Never invent unrelated body parts or conditions)',
   });
 
-  const prompt = `Please sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID], and provide an accurate patient translation:\n\n${rawClinicalNote}`;
+  const prompt = `Please sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote}`;
 
   try {
     const result = await model.generateContent(prompt);
