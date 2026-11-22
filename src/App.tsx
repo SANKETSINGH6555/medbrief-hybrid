@@ -790,7 +790,11 @@ export default function App() {
                     setClinicalText(e.target.value);
                     setSelectedNoteId(null);
                   }}
-                  placeholder="Paste clinical note, discharge summary, or medication list here..."
+                  placeholder={
+                    uploadedImage
+                      ? `Multimodal image attached: ${uploadedImage.name}. Click 'Sanitize Prescription on Device' to redact patient identifiers locally, or enter additional notes here...`
+                      : 'Paste clinical note, discharge summary, or medication list here...'
+                  }
                   className="w-full rounded-xl bg-surface-subtle border border-border-theme p-3.5 font-mono text-xs text-text-primary focus:bg-surface focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:border-teal-600 transition leading-relaxed resize-y shadow-2xs"
                 />
               </div>
@@ -842,7 +846,11 @@ export default function App() {
                   ) : (
                     <>
                       <Cpu className="w-4 h-4" />
-                      <span>Sanitize on Device</span>
+                      <span>
+                        {uploadedImage && !clinicalText.trim()
+                          ? 'Sanitize Prescription on Device'
+                          : 'Sanitize on Device'}
+                      </span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
