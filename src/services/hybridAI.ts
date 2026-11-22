@@ -209,11 +209,12 @@ export async function runPrivacyShieldStage(
         maxOutputTokens: 1024,
         temperature: 0.3,
       },
-      systemInstruction,
     },
   });
 
-  const prompt = `Please sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote}`;
+  const prompt =
+    `SYSTEM INSTRUCTIONS:\n${systemInstruction}\n\n` +
+    `USER REQUEST:\nPlease sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote}`;
 
   try {
     const result = await model.generateContent(prompt);
@@ -309,16 +310,9 @@ export async function runCloudRecoveryAnalyzerStage(
     '  "doctorQuestions": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]\n' +
     '}';
 
-  const prompt = `Generate the structured 7-Day Recovery Plan, Red-Flag Warning Signs, and 5 Doctor Questions based on this sanitized clinical brief. Keep each day concise with exactly 2 bullet points:\n\nSanitized Context:\n${sanitizedText}\n\nSummary:\n${simplifiedSummary}`;
-
-  // Speed-optimized configuration: disables heavy thinking latency, caps tokens to 1024
-  const generationConfig = {
-    maxOutputTokens: 1024,
-    temperature: 0.3,
-    thinkingConfig: {
-      thinkingBudget: 0,
-    },
-  };
+  const prompt =
+    `SYSTEM INSTRUCTIONS:\n${systemInstruction}\n\n` +
+    `USER REQUEST:\nGenerate the structured 7-Day Recovery Plan, Red-Flag Warning Signs, and 5 Doctor Questions based on this sanitized clinical brief. Keep each day concise with exactly 2 bullet points:\n\nSanitized Context:\n${sanitizedText}\n\nSummary:\n${simplifiedSummary}`;
 
   // Instant Failover Cascade (strictly valid, active Gemini models)
   const CLOUD_CANDIDATE_MODELS = [
@@ -343,11 +337,7 @@ export async function runCloudRecoveryAnalyzerStage(
         generationConfig: {
           maxOutputTokens: 1024,
           temperature: 0.3,
-          thinkingConfig: {
-            thinkingBudget: 0,
-          },
         },
-        systemInstruction,
       },
     });
 
