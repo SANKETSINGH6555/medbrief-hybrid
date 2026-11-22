@@ -26,7 +26,7 @@ export const TelemetryBadge: React.FC<TelemetryBadgeProps> = ({ telemetry, label
           ) : (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
               <Cloud className="w-3.5 h-3.5 text-indigo-400" />
-              ☁️ IN_CLOUD (Gemini 2.5 Flash)
+              ☁️ IN_CLOUD (Gemini 3.8 Flash)
             </span>
           )}
           {label && (

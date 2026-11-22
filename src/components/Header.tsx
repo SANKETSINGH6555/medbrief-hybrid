@@ -55,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">
-                  On-Device Privacy Shield (Gemini Nano) & Cloud Recovery Analyzer (Gemini 2.5)
+                  On-Device Privacy Shield (Gemini Nano) & Cloud Recovery Analyzer (Cloud Gemini 3.8 Flash)
                 </p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span>
                 Nano:{' '}
                 <strong className="font-semibold capitalize">
-                  {nanoReadiness.status === 'available' ? 'Ready' : nanoReadiness.status}
+                  {nanoReadiness.status === 'available' ? 'Available' : nanoReadiness.status}
                 </strong>
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>

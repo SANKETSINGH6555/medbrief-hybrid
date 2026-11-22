@@ -107,48 +107,41 @@ export async function checkChromeNanoReadiness(): Promise<NanoReadiness> {
     return { status: 'unsupported', message: 'Not in browser environment.' };
   }
 
-  // Modern Chrome Prompt API detection
-  const aiWindow = (window as unknown as {
-    ai?: {
-      languageModel?: {
-        availability?: () => Promise<string>;
-        capabilities?: () => Promise<{ available: string }>;
-      };
-    };
-    LanguageModel?: {
-      availability?: () => Promise<string>;
-    };
-  });
-
   try {
-    if (aiWindow.LanguageModel?.availability) {
-      const avail = await aiWindow.LanguageModel.availability();
-      if (avail === 'readily') {
-        return { status: 'available', message: 'Gemini Nano is ready for instant on-device execution.' };
+    const selfAny = (typeof self !== 'undefined' ? self : window) as any;
+
+    // 1. Check (self as any).LanguageModel?.availability() (Chrome 157 standard API)
+    if (typeof selfAny.LanguageModel?.availability === 'function') {
+      const avail = await selfAny.LanguageModel.availability();
+      if (avail === 'available' || avail === 'readily') {
+        return { status: 'available', message: 'Gemini Nano is available for instant on-device execution.' };
       }
-      if (avail === 'after-download') {
+      if (avail === 'after-download' || avail === 'downloading') {
         return { status: 'downloading', message: 'Gemini Nano is downloading locally into Chrome.' };
       }
       return { status: 'unavailable', message: `Chrome Prompt API status: "${avail}".` };
     }
 
-    if (aiWindow.ai?.languageModel?.availability) {
-      const avail = await aiWindow.ai.languageModel.availability();
-      if (avail === 'readily') {
-        return { status: 'available', message: 'Gemini Nano is ready for instant on-device execution.' };
+    // 2. Fallback to (window as any).ai?.languageModel?.availability()
+    const winAny = window as any;
+    if (typeof winAny.ai?.languageModel?.availability === 'function') {
+      const avail = await winAny.ai.languageModel.availability();
+      if (avail === 'available' || avail === 'readily') {
+        return { status: 'available', message: 'Gemini Nano is available for instant on-device execution.' };
       }
-      if (avail === 'after-download') {
+      if (avail === 'after-download' || avail === 'downloading') {
         return { status: 'downloading', message: 'Gemini Nano is downloading locally into Chrome.' };
       }
       return { status: 'unavailable', message: `Chrome Prompt API status: "${avail}".` };
     }
 
-    if (aiWindow.ai?.languageModel?.capabilities) {
-      const caps = await aiWindow.ai.languageModel.capabilities();
-      if (caps.available === 'readily') {
-        return { status: 'available', message: 'Gemini Nano is ready for instant on-device execution.' };
+    // 3. Fallback to (window as any).ai?.languageModel?.capabilities()
+    if (typeof winAny.ai?.languageModel?.capabilities === 'function') {
+      const caps = await winAny.ai.languageModel.capabilities();
+      if (caps.available === 'available' || caps.available === 'readily') {
+        return { status: 'available', message: 'Gemini Nano is available for instant on-device execution.' };
       }
-      if (caps.available === 'after-download') {
+      if (caps.available === 'after-download' || caps.available === 'downloading') {
         return { status: 'downloading', message: 'Gemini Nano model is downloading locally.' };
       }
       return { status: 'unavailable', message: `Capability status: "${caps.available}".` };

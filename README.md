@@ -7,7 +7,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 > **Official Submission for the #BuildHybridAI 2026 Hackathon (Web / Chrome Track)**  
-> MedBrief Hybrid solves the healthcare AI paradox: patients need complex medical discharge notes translated into clear, actionable care plans, but medical records contain intensely sensitive Personally Identifiable Information (PII) that must never be exposed. MedBrief Hybrid deploys **Chrome Gemini Nano directly on-device** to strip all PII locally in the browser with **0 bytes transmitted**, and then routes the sanitized payload to **Cloud Gemini 2.5 Flash** to synthesize structured 7-day recovery plans, red-flag triage protocols, and doctor consultation checklists.
+> MedBrief Hybrid solves the healthcare AI paradox: patients need complex medical discharge notes translated into clear, actionable care plans, but medical records contain intensely sensitive Personally Identifiable Information (PII) that must never be exposed. MedBrief Hybrid deploys **Chrome Gemini Nano directly on-device** to strip all PII locally in the browser with **0 bytes transmitted**, and then routes the sanitized payload to **Cloud Gemini 3.8 Flash** to synthesize structured 7-day recovery plans, red-flag triage protocols, and doctor consultation checklists.
 
 ---
 
@@ -49,7 +49,7 @@
 |   |                                                                                                 |   |
 |   |   +-----------------------------------------------------------------------------------------+   |   |
 |   |   | STAGE 2: Cloud Recovery & Red-Flag Analyzer (firebase/ai)                               |   |   |
-|   |   | Engine: Gemini 2.5 Flash via GoogleAIBackend                                            |   |   |
+|   |   | Engine: Gemini 3.8 Flash via GoogleAIBackend                                            |   |   |
 |   |   | Mode: InferenceMode.ONLY_IN_CLOUD                                                        |   |   |
 |   |   | Security: Firebase App Check (ReCaptcha Enterprise + Debug Tokens)                      |   |   |
 |   |   +-----------------------------------------------------------------------------------------+   |   |
@@ -86,7 +86,7 @@
    - Triage warning signs into **Urgent Emergency (Call 911)**, **Doctor Follow-Up (Call within 24h)**, and **Normal Healing**.
    - Generates 5 high-impact questions for the patient's next clinical consultation.
 4. **Live Hybrid Telemetry & Demo Controls:**
-   - Real-time engine indicator: `⚡ ON_DEVICE (Gemini Nano)` vs `☁️ IN_CLOUD (Gemini 2.5 Flash)`.
+   - Real-time engine indicator: `⚡ ON_DEVICE (Gemini Nano)` vs `☁️ IN_CLOUD (Gemini 3.8 Flash)`.
    - Precise millisecond latency counter.
    - Data Boundary audit indicator: `Local Browser Memory (0 Bytes Sent)` vs `Sanitized Cloud Payload`.
    - Routing mode switch: `Auto Hybrid` | `Force On-Device` | `Force Cloud`.
@@ -103,7 +103,7 @@
 
 ## 🛠️ Chrome Gemini Nano Setup Instructions for Judges
 
-MedBrief Hybrid features an **intelligent auto-hybrid fallback**: if tested on standard Chrome, Safari, or Firefox, it automatically routes through Cloud Gemini 2.5 with zero crashes. 
+MedBrief Hybrid features an **intelligent auto-hybrid fallback**: if tested on standard Chrome, Safari, or Firefox, it automatically routes through Cloud Gemini 3.8 Flash with zero crashes. 
 
 To evaluate **local on-device Gemini Nano execution in Chrome**:
 
@@ -136,7 +136,7 @@ Locate **Optimization Guide On Device Model** and click **Check for update**. On
 - **Styling:** Tailwind CSS, Lucide Icons, Plus Jakarta Sans, JetBrains Mono
 - **AI Engine:** Firebase AI Logic (`firebase/ai` v13.4.0)
 - **Local Model:** Google Chrome Gemini Nano (via Chrome Prompt API / `window.ai.languageModel`)
-- **Cloud Model:** Gemini 2.5 Flash (`GoogleAIBackend`)
+- **Cloud Model:** Gemini 3.8 Flash (`GoogleAIBackend`)
 - **Backend & Database:** Cloud Firestore, Firebase Authentication, Firebase Remote Config, Firebase App Check, Firebase Hosting
 
 ---

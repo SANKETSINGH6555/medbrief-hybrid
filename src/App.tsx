@@ -366,7 +366,7 @@ export default function App() {
               The Zero-Leakage Hybrid AI Healthcare Companion
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Medical records contain intensely sensitive personal data. MedBrief Hybrid deploys <strong className="text-emerald-400">Chrome Gemini Nano on-device</strong> to strip patient identifiers locally with 0 bytes leaving browser memory, then securely activates <strong className="text-indigo-400">Cloud Gemini 2.5</strong> with sanitized payloads to build interactive 7-day care plans.
+              Medical records contain intensely sensitive personal data. MedBrief Hybrid deploys <strong className="text-emerald-400">Chrome Gemini Nano on-device</strong> to strip patient identifiers locally with 0 bytes leaving browser memory, then securely activates <strong className="text-indigo-400">Cloud Gemini 3.8 Flash</strong> with sanitized payloads to build interactive 7-day care plans.
             </p>
           </div>
 

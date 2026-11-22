@@ -165,6 +165,7 @@ export async function runPrivacyShieldStage(
 
   // Instantiated on user interaction as required by Chrome Prompt API
   const model = getGenerativeModel(ai, {
+    model: 'gemini-3.8-flash',
     mode: inferenceMode,
     onDeviceParams: {
       outputLanguage: 'en',
@@ -174,7 +175,7 @@ export async function runPrivacyShieldStage(
       },
     } as any,
     inCloudParams: {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
     },
     systemInstruction:
       'You are the On-Device Privacy Shield & Medical Translator for MedBrief Hybrid. Always respond in clear English.\n\n' +
@@ -252,7 +253,7 @@ export async function runPrivacyShieldStage(
         ? 'Local Browser Memory (0 Bytes Sent)'
         : 'Sanitized Cloud Payload',
       timestamp: new Date().toLocaleTimeString(),
-      modelName: isSourceOnDevice ? 'Gemini Nano (Local NPU/Wasm)' : 'Gemini 2.5 Flash (Cloud AI)',
+      modelName: isSourceOnDevice ? 'Gemini Nano (Local NPU/Wasm)' : 'Gemini 3.8 Flash (Cloud AI)',
     };
 
     return {
@@ -286,9 +287,10 @@ export async function runCloudRecoveryAnalyzerStage(
 
   // Instantiate on user interaction
   const model = getGenerativeModel(ai, {
+    model: 'gemini-3.8-flash',
     mode: InferenceMode.ONLY_IN_CLOUD,
     inCloudParams: {
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
     },
     systemInstruction:
       'You are the MedBrief Cloud Recovery Specialist & Red-Flag Analyzer. Respond in English. ' +
@@ -356,7 +358,7 @@ export async function runCloudRecoveryAnalyzerStage(
     latencyMs,
     dataBoundary: 'Sanitized Cloud Payload',
     timestamp: new Date().toLocaleTimeString(),
-    modelName: 'Gemini 2.5 Flash (Google Cloud AI)',
+    modelName: 'Gemini 3.8 Flash (Google Cloud AI)',
   };
 
   return {
