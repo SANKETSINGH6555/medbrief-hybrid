@@ -274,9 +274,29 @@ export async function runPrivacyShieldStage(
   }
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isRetryableError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = (err as any)?.status || (err as any)?.code || (err as any)?.httpStatus;
+  if (status === 503 || status === 429) return true;
+  return /503|429|high demand|overloaded|resource exhausted|unavailable|too many requests/i.test(msg);
+}
+
+function isFallbackError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = (err as any)?.status || (err as any)?.code || (err as any)?.httpStatus;
+  if (status === 503 || status === 404 || status === 429) return true;
+  return /503|404|429|high demand|overloaded|not found|unavailable|unsupported model|resource exhausted/i.test(msg);
+}
+
 /**
  * STAGE 2: Cloud Recovery & Red-Flag Analyzer
- * Runs strictly with InferenceMode.ONLY_IN_CLOUD.
+ * Runs strictly with InferenceMode.ONLY_IN_CLOUD with automatic resilience:
+ * - Up to 2 retries with 1.5s delay on HTTP 503 / 429 / high-demand errors
+ * - Automatic cascade fallback: gemini-3.8-flash -> gemini-3.8-flash-lite -> gemini-3.5-flash
  * Receives ONLY the sanitized, PII-stripped summary from Stage 1. Zero raw PII leaves the browser.
  */
 export async function runCloudRecoveryAnalyzerStage(
@@ -285,35 +305,87 @@ export async function runCloudRecoveryAnalyzerStage(
 ): Promise<Stage2Result> {
   const startTime = performance.now();
 
-  // Instantiate on user interaction
-  const model = getGenerativeModel(ai, {
-    model: 'gemini-3.8-flash',
-    mode: InferenceMode.ONLY_IN_CLOUD,
-    inCloudParams: {
-      model: 'gemini-3.8-flash',
-    },
-    systemInstruction:
-      'You are the MedBrief Cloud Recovery Specialist & Red-Flag Analyzer. Respond in English. ' +
-      'Given a PII-sanitized medical brief (where all PII has already been replaced by [REDACTED_NAME], [REDACTED_DATE], [REDACTED_ID]), generate: ' +
-      '1) A structured 7-Day Recovery Checklist (Day 1 through Day 7) with 2-3 specific, medically accurate tasks per day (e.g. pillow splinting when coughing, daily weighing for fluid retention, sternal precautions). ' +
-      '2) Red-Flag Warning Signs classified into Urgent Emergency (Call 911 / Go to ER) vs Doctor Follow-up (Call Clinic in 24h) vs Normal Healing Expectations. ' +
-      '3) 5 High-Impact, intelligent questions the patient should ask their doctor at follow-up. ' +
-      'Return the response in strict JSON format matching this schema:\n' +
-      '{\n' +
-      '  "checklist": [{ "day": 1, "title": "Immediate Discharge Rest", "tasks": ["Task 1", "Task 2"] }, ... up to day 7],\n' +
-      '  "warningSigns": [{ "severity": "urgent"|"warning"|"normal", "title": "...", "description": "...", "action": "..." }],\n' +
-      '  "doctorQuestions": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]\n' +
-      '}',
-  });
+  const systemInstruction =
+    'You are the MedBrief Cloud Recovery Specialist & Red-Flag Analyzer. Respond in English. ' +
+    'Given a PII-sanitized medical brief (where all PII has already been replaced by [REDACTED_NAME], [REDACTED_DATE], [REDACTED_ID]), generate: ' +
+    '1) A structured 7-Day Recovery Checklist (Day 1 through Day 7) with 2-3 specific, medically accurate tasks per day (e.g. pillow splinting when coughing, daily weighing for fluid retention, sternal precautions). ' +
+    '2) Red-Flag Warning Signs classified into Urgent Emergency (Call 911 / Go to ER) vs Doctor Follow-up (Call Clinic in 24h) vs Normal Healing Expectations. ' +
+    '3) 5 High-Impact, intelligent questions the patient should ask their doctor at follow-up. ' +
+    'Return the response in strict JSON format matching this schema:\n' +
+    '{\n' +
+    '  "checklist": [{ "day": 1, "title": "Immediate Discharge Rest", "tasks": ["Task 1", "Task 2"] }, ... up to day 7],\n' +
+    '  "warningSigns": [{ "severity": "urgent"|"warning"|"normal", "title": "...", "description": "...", "action": "..." }],\n' +
+    '  "doctorQuestions": ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]\n' +
+    '}';
 
   const prompt = `Generate the structured 7-Day Recovery Plan, Red-Flag Warning Signs, and 5 Doctor Questions based on this sanitized clinical brief:\n\nSanitized Context:\n${sanitizedText}\n\nSummary:\n${simplifiedSummary}`;
 
-  const result = await model.generateContent(prompt);
+  // Resilient Cloud Model Cascade
+  const CLOUD_CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-3.5-flash'];
+  let successfulResult: any = null;
+  let resolvedModelName = CLOUD_CANDIDATE_MODELS[0];
+  let lastError: unknown = null;
+
+  for (const candidateModel of CLOUD_CANDIDATE_MODELS) {
+    resolvedModelName = candidateModel;
+    const model = getGenerativeModel(ai, {
+      model: candidateModel,
+      mode: InferenceMode.ONLY_IN_CLOUD,
+      inCloudParams: {
+        model: candidateModel,
+      },
+      systemInstruction,
+    });
+
+    let attempt = 0;
+    const maxRetries = 2; // Up to 2 retries (total 3 attempts per model)
+    let modelSucceeded = false;
+
+    while (attempt <= maxRetries) {
+      try {
+        const result = await model.generateContent(prompt);
+        successfulResult = result;
+        modelSucceeded = true;
+        break;
+      } catch (err: unknown) {
+        lastError = err;
+        attempt++;
+        if (attempt <= maxRetries && isRetryableError(err)) {
+          console.warn(
+            `[MedBrief] Cloud Gemini (${candidateModel}) attempt ${attempt} encountered transient error. Retrying in 1.5s...`,
+            err
+          );
+          await sleep(1500);
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (modelSucceeded && successfulResult) {
+      break;
+    }
+
+    if (isFallbackError(lastError)) {
+      console.warn(
+        `[MedBrief] Cloud Gemini (${candidateModel}) returned 503/404/overload error after retries. Cascading to fallback model...`,
+        lastError
+      );
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  if (!successfulResult) {
+    throw lastError || new Error('All Cloud Gemini models encountered errors.');
+  }
+
   const endTime = performance.now();
   const latencyMs = Math.round(endTime - startTime);
 
-  const rawText = result.response.text();
-  const rawSource = result.response.inferenceSource;
+  const rawText = successfulResult.response.text();
+  const rawSource = successfulResult.response.inferenceSource;
   const isSourceOnDevice =
     rawSource === InferenceSource.ON_DEVICE ||
     String(rawSource).toLowerCase().includes('on_device');
@@ -353,12 +425,19 @@ export async function runCloudRecoveryAnalyzerStage(
     ];
   }
 
+  const modelLabel =
+    resolvedModelName === 'gemini-3.8-flash'
+      ? 'Gemini 3.8 Flash (Google Cloud AI)'
+      : resolvedModelName === 'gemini-3.8-flash-lite'
+      ? 'Gemini 3.8 Flash-Lite (Google Cloud AI Fallback)'
+      : 'Gemini 3.5 Flash (Google Cloud AI Fallback)';
+
   const telemetry: TelemetryData = {
     inferenceSource: isSourceOnDevice ? 'ON_DEVICE' : 'IN_CLOUD',
     latencyMs,
     dataBoundary: 'Sanitized Cloud Payload',
     timestamp: new Date().toLocaleTimeString(),
-    modelName: 'Gemini 3.8 Flash (Google Cloud AI)',
+    modelName: modelLabel,
   };
 
   return {
