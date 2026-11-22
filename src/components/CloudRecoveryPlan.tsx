@@ -13,7 +13,7 @@ import {
   HeartHandshake,
   ShieldAlert,
 } from 'lucide-react';
-import { Stage2Result, DayPlan, WarningSign } from '../types';
+import { Stage2Result, DayPlan, WarningSign } from '../types/index';
 import { TelemetryBadge } from './TelemetryBadge';
 
 interface CloudRecoveryPlanProps {

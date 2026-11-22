@@ -30,7 +30,7 @@ import {
   Stage1Result,
   Stage2Result,
   SavedBrief,
-} from './types';
+} from './types/index';
 import {
   ensureAnonymousAuth,
   fetchDefaultInferenceMode,
@@ -43,7 +43,7 @@ import {
   saveBriefToFirestore,
   loadUserBriefs,
   deleteUserBrief,
-} from './lib/aiService';
+} from './services/hybridAI';
 
 export default function App() {
   // State

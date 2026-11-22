@@ -1,6 +1,6 @@
 import React from 'react';
 import { Cpu, Cloud, Zap, ShieldCheck, Database, HardDrive, Clock } from 'lucide-react';
-import { TelemetryData } from '../types';
+import { TelemetryData } from '../types/index';
 
 interface TelemetryBadgeProps {
   telemetry: TelemetryData;

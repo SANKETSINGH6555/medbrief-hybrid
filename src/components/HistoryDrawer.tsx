@@ -10,7 +10,7 @@ import {
   Layers,
   Sparkles,
 } from 'lucide-react';
-import { SavedBrief } from '../types';
+import { SavedBrief } from '../types/index';
 
 interface HistoryDrawerProps {
   isOpen: boolean;

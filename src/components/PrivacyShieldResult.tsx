@@ -11,7 +11,7 @@ import {
   AlertCircle,
   Sparkles,
 } from 'lucide-react';
-import { Stage1Result } from '../types';
+import { Stage1Result } from '../types/index';
 import { TelemetryBadge } from './TelemetryBadge';
 
 interface PrivacyShieldResultProps {

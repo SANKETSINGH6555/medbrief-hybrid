@@ -11,7 +11,7 @@ import {
   Layers,
   UserCheck,
 } from 'lucide-react';
-import { RoutingMode } from '../types';
+import { RoutingMode } from '../types/index';
 import { NanoReadiness } from '../lib/firebase';
 
 interface HeaderProps {

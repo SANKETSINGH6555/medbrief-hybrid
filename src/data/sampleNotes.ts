@@ -1,4 +1,4 @@
-import { SampleNote } from '../types';
+import { SampleNote } from '../types/index';
 
 export const SAMPLE_CLINICAL_NOTES: SampleNote[] = [
   {
