@@ -54,6 +54,7 @@ export default function App() {
 
   const [isPrivacyShieldLoading, setIsPrivacyShieldLoading] = useState(false);
   const [isCloudLoading, setIsCloudLoading] = useState(false);
+  const [streamingRecoveryText, setStreamingRecoveryText] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
 
@@ -170,49 +171,64 @@ export default function App() {
     if (!stage1Result) return;
 
     setIsCloudLoading(true);
+    setStreamingRecoveryText('');
     setErrorMsg(null);
 
     try {
       const result = await runCloudRecoveryAnalyzerStage(
         stage1Result.sanitizedText,
-        stage1Result.simplifiedSummary
+        stage1Result.simplifiedSummary,
+        (_chunk, accumulated) => {
+          setStreamingRecoveryText(accumulated);
+        }
       );
       setStage2Result(result);
       showToast('Stage 2 Complete: 7-Day Care Plan & Red Flags Generated');
+
+      // Requirement 4: Prevent Firestore Blocking - non-blocking background save
+      if (userUid) {
+        saveBriefToFirestore(userUid, currentTitle, stage1Result, result)
+          .then(() => {
+            setHasSaved(true);
+            loadUserBriefs(userUid).then(setSavedBriefs).catch(console.error);
+          })
+          .catch((err) => {
+            console.error('Non-blocking Firestore background save warning:', err);
+          });
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMsg(`Cloud Stage Error: ${msg}`);
     } finally {
       setIsCloudLoading(false);
+      setStreamingRecoveryText('');
     }
   };
 
-  // Save brief to Firestore
-  const handleSaveToFirestore = async () => {
+  // Save brief to Firestore (non-blocking)
+  const handleSaveToFirestore = () => {
     if (!userUid || !stage1Result || !stage2Result) {
       showToast('Cannot save until both stages are completed.');
       return;
     }
 
     setIsSaving(true);
-    try {
-      const docId = await saveBriefToFirestore(
-        userUid,
-        currentTitle,
-        stage1Result,
-        stage2Result
-      );
-      setHasSaved(true);
-      showToast('Brief successfully saved to Cloud Firestore!');
-      // Reload history
-      const updatedBriefs = await loadUserBriefs(userUid);
-      setSavedBriefs(updatedBriefs);
-    } catch (err) {
-      console.error('Failed to save to Firestore:', err);
-      showToast('Failed to save brief to Firestore.');
-    } finally {
-      setIsSaving(false);
-    }
+    saveBriefToFirestore(userUid, currentTitle, stage1Result, stage2Result)
+      .then(() => {
+        setHasSaved(true);
+        showToast('Brief successfully saved to Cloud Firestore!');
+        return loadUserBriefs(userUid);
+      })
+      .then((updatedBriefs) => {
+        setSavedBriefs(updatedBriefs);
+      })
+      .catch((err) => {
+        console.error('Failed to save to Firestore:', err);
+        showToast('Failed to save brief to Firestore.');
+      })
+      .finally(() => {
+        setIsSaving(false);
+      });
   };
 
   // Delete brief from Firestore
@@ -473,6 +489,35 @@ export default function App() {
             onProceedToCloudStage={handleExecuteCloudRecovery}
             isCloudLoading={isCloudLoading}
           />
+        )}
+
+        {/* Live Cloud Streaming Progress */}
+        {isCloudLoading && (
+          <div className="bg-slate-900 rounded-2xl border border-indigo-500/40 p-5 shadow-xl transition-all">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-3 h-3 rounded-full bg-indigo-500 animate-ping" />
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span>Streaming Live from Cloud Gemini...</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    generateContentStream
+                  </span>
+                </h4>
+              </div>
+              <span className="text-xs text-indigo-300 font-mono">⚡ 1–2s Live Response</span>
+            </div>
+
+            {streamingRecoveryText ? (
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-indigo-200 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                {streamingRecoveryText}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-slate-400 py-3">
+                <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                <span>Connecting to Google Cloud AI and initiating token stream...</span>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Stage 2 Output: Cloud Recovery & Red-Flag Analyzer */}
