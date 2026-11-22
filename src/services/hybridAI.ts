@@ -197,13 +197,14 @@ export async function runPrivacyShieldStage(
     mode: inferenceMode,
     onDeviceParams: {
       outputLanguage: 'en',
+      expectedOutputs: [{ type: 'text', languages: ['en'] }],
       createOptions: {
-        expectedOutputs: [{ type: 'text', language: 'en' }],
-        expectedInputs: [{ type: 'text', language: 'en' }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }],
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
       },
     } as any,
     inCloudParams: {
-      model: 'gemini-3.8-flash',
+      model: 'gemini-3.5-flash-lite',
       generationConfig: {
         maxOutputTokens: 1024,
         temperature: 0.3,
@@ -319,12 +320,11 @@ export async function runCloudRecoveryAnalyzerStage(
     },
   };
 
-  // Instant Failover Cascade (0ms delay, no slow retries on 503/404/429)
+  // Instant Failover Cascade (strictly valid, active Gemini models)
   const CLOUD_CANDIDATE_MODELS = [
-    'gemini-3.8-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-3.8-flash-lite',
+    'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
+    'gemini-3.8-flash',
   ];
 
   let rawText = '';
@@ -381,7 +381,11 @@ export async function runCloudRecoveryAnalyzerStage(
   }
 
   if (!rawText.trim()) {
-    throw lastError || new Error('All Cloud Gemini models encountered errors.');
+    const errorDetail =
+      lastError instanceof Error ? lastError.message : String(lastError || 'Unknown cloud error');
+    throw new Error(
+      `All Cloud Gemini models (${CLOUD_CANDIDATE_MODELS.join(', ')}) failed: ${errorDetail}. Please check your connection or switch to Auto Hybrid mode.`
+    );
   }
 
   const endTime = performance.now();
@@ -427,13 +431,11 @@ export async function runCloudRecoveryAnalyzerStage(
   }
 
   const modelLabel =
-    resolvedModelName === 'gemini-3.8-flash'
-      ? 'Gemini 3.8 Flash (Google Cloud AI Streaming)'
-      : resolvedModelName === 'gemini-2.5-flash-lite'
-      ? 'Gemini 2.5 Flash-Lite (Google Cloud AI Instant Failover)'
-      : resolvedModelName === 'gemini-3.8-flash-lite'
-      ? 'Gemini 3.8 Flash-Lite (Google Cloud AI Instant Failover)'
-      : 'Gemini 3.5 Flash (Google Cloud AI Fallback)';
+    resolvedModelName === 'gemini-3.5-flash-lite'
+      ? 'Gemini 3.5 Flash-Lite (Google Cloud AI Streaming)'
+      : resolvedModelName === 'gemini-3.5-flash'
+      ? 'Gemini 3.5 Flash (Google Cloud AI Fallback)'
+      : 'Gemini 3.8 Flash (Google Cloud AI Fallback)';
 
   const telemetry: TelemetryData = {
     inferenceSource: isSourceOnDevice ? 'ON_DEVICE' : 'IN_CLOUD',
