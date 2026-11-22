@@ -63,3 +63,11 @@ export interface SampleNote {
   description: string;
   rawClinicalText: string;
 }
+
+export interface UploadedImage {
+  name: string;
+  mimeType: string;
+  base64Data: string;
+  dataUrl: string;
+  sizeKb: number;
+}

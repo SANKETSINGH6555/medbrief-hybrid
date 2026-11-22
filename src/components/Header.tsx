@@ -1,15 +1,13 @@
 import React from 'react';
 import {
-  ShieldAlert,
+  ShieldCheck,
   Cpu,
   Cloud,
-  Sliders,
+  Sparkles,
   History,
   HelpCircle,
-  Wifi,
-  Sparkles,
+  Activity,
   Layers,
-  UserCheck,
 } from 'lucide-react';
 import { RoutingMode } from '../types/index';
 import { NanoReadiness } from '../lib/firebase';
@@ -29,169 +27,132 @@ export const Header: React.FC<HeaderProps> = ({
   routingMode,
   onRoutingModeChange,
   nanoReadiness,
-  remoteConfigDefault,
-  userUid,
   savedBriefsCount,
   onOpenHistory,
   onOpenGuide,
 }) => {
-  return (
-    <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          {/* Brand & Track Info */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20">
-                <ShieldAlert className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-                    MedBrief <span className="text-cyan-400">Hybrid</span>
-                  </h1>
-                  <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/80">
-                    #BuildHybridAI 2026
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">
-                  On-Device Privacy Shield (Gemini Nano) & Cloud Recovery Analyzer (Cloud Gemini 3.8 Flash)
-                </p>
-              </div>
-            </div>
+  const isNanoReady = nanoReadiness.status === 'available';
 
-            {/* Mobile Actions */}
-            <div className="flex items-center gap-1.5 lg:hidden">
-              <button
-                onClick={onOpenGuide}
-                title="Chrome Gemini Nano Setup Guide"
-                className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white"
+  return (
+    <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md sticky top-0 z-40 transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Brand Mark & Clinical Copilot Title */}
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-lg bg-teal-700 flex items-center justify-center text-white shadow-xs">
+              <svg
+                className="w-5 h-5 fill-none stroke-current stroke-2"
+                viewBox="0 0 24 24"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <HelpCircle className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onOpenHistory}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 text-xs text-slate-200"
-              >
-                <History className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{savedBriefsCount}</span>
-              </button>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-slate-900 tracking-tight">
+                  MedBrief
+                </span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200/70">
+                  Hybrid Clinical Copilot
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                On-device privacy redaction with cloud-assisted recovery analytics
+              </p>
             </div>
           </div>
 
-          {/* Badges & Mode Switch */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Chrome Nano Readiness Badge */}
-            <div
+          {/* Right Status Controls */}
+          <div className="flex items-center gap-2.5">
+            {/* On-Device AI Status Pill */}
+            <button
+              type="button"
               onClick={onOpenGuide}
-              className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                nanoReadiness.status === 'available'
-                  ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/40'
-                  : nanoReadiness.status === 'downloading'
-                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 hover:bg-amber-900/40'
-                  : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+              className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                isNanoReady
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200/80 hover:bg-emerald-100/60'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
               title={nanoReadiness.message}
             >
-              <Cpu className={`w-3.5 h-3.5 ${
-                nanoReadiness.status === 'available' ? 'text-emerald-400' : 'text-cyan-400'
-              }`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isNanoReady ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                }`}
+              />
               <span>
-                Nano:{' '}
-                <strong className="font-semibold capitalize">
-                  {nanoReadiness.status === 'available' ? 'Available' : nanoReadiness.status}
+                On-Device AI:{' '}
+                <strong className="font-semibold">
+                  {isNanoReady ? 'Ready' : 'Checking / Cloud Auto'}
                 </strong>
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-            </div>
+            </button>
 
-            {/* Remote Config Status Badge */}
-            <div
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 border border-slate-700 text-slate-300"
-              title="Remote Config policy fetched from Firebase"
-            >
-              <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Policy:</span>
-              <span className="font-mono text-indigo-300 text-[11px]">{remoteConfigDefault}</span>
-            </div>
-
-            {/* Routing Mode Segmented Switch */}
-            <div className="inline-flex items-center p-1 rounded-xl bg-slate-950/90 border border-slate-800">
+            {/* Routing Mode Segmented Control */}
+            <div className="inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200/90 text-xs">
               <button
                 type="button"
                 onClick={() => onRoutingModeChange('auto')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   routingMode === 'auto'
-                    ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Auto Hybrid: Uses on-device Gemini Nano if available, seamless cloud fallback"
+                title="Auto Hybrid: Uses on-device Gemini Nano if available, with seamless cloud fallback"
               >
-                <Sparkles className="w-3 h-3" />
-                <span>Auto Hybrid</span>
+                Auto
               </button>
-
               <button
                 type="button"
                 onClick={() => onRoutingModeChange('only_on_device')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   routingMode === 'only_on_device'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-teal-800 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Force On-Device: 100% offline inference inside Chrome"
+                title="Force On-Device: 100% offline local inference in Chrome"
               >
-                <Cpu className="w-3 h-3" />
-                <span>Force On-Device</span>
+                On-Device
               </button>
-
               <button
                 type="button"
                 onClick={() => onRoutingModeChange('only_in_cloud')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   routingMode === 'only_in_cloud'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Force Cloud: Direct Gemini Cloud AI"
+                title="Force Cloud: Direct Cloud Gemini inference"
               >
-                <Cloud className="w-3 h-3" />
-                <span>Force Cloud</span>
+                Cloud
               </button>
             </div>
 
-            {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center gap-2">
-              <button
-                onClick={onOpenGuide}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
-                title="Chrome Gemini Nano Setup Guide"
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Judge Guide</span>
-              </button>
+            {/* Saved Briefs Button */}
+            <button
+              type="button"
+              onClick={onOpenHistory}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-xs transition"
+            >
+              <History className="w-3.5 h-3.5 text-slate-500" />
+              <span>Saved Briefs</span>
+              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700 font-mono text-[11px] font-semibold border border-slate-200">
+                {savedBriefsCount}
+              </span>
+            </button>
 
-              <button
-                onClick={onOpenHistory}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 hover:bg-cyan-900/80 transition"
-              >
-                <History className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Saved Briefs</span>
-                <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-cyan-800 text-white text-[10px] font-bold">
-                  {savedBriefsCount}
-                </span>
-              </button>
-
-              {userUid && (
-                <div
-                  className="hidden xl:flex items-center gap-1 text-[11px] text-slate-400 font-mono px-2 py-1 rounded bg-slate-950/60 border border-slate-800"
-                  title={`Firebase Anonymous Auth UID: ${userUid}`}
-                >
-                  <UserCheck className="w-3 h-3 text-emerald-400" />
-                  <span>{userUid.substring(0, 8)}...</span>
-                </div>
-              )}
-            </div>
+            {/* Guide Button */}
+            <button
+              type="button"
+              onClick={onOpenGuide}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+              title="Chrome Gemini Nano Setup Guide for Judges"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

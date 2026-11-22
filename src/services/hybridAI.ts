@@ -22,6 +22,7 @@ import {
   DayPlan,
   WarningSign,
   TelemetryData,
+  UploadedImage,
 } from '../types/index';
 
 /**
@@ -155,13 +156,14 @@ export function detectPIITypes(text: string): string[] {
  */
 export async function runPrivacyShieldStage(
   rawClinicalNote: string,
-  routingMode: RoutingMode
+  routingMode: RoutingMode,
+  image?: UploadedImage | null
 ): Promise<Stage1Result> {
   const startTime = performance.now();
   const inferenceMode = getFirebaseInferenceMode(routingMode);
 
   // Pre-scrub deterministic check to establish baseline detected PII
-  const preScrub = scrubPIIDeterministic(rawClinicalNote);
+  const preScrub = scrubPIIDeterministic(rawClinicalNote || (image ? image.name : ''));
 
   const systemInstruction =
     'You are the On-Device Privacy Shield & Medical Translator for MedBrief Hybrid. Always respond in clear English.\n\n' +
@@ -214,10 +216,22 @@ export async function runPrivacyShieldStage(
 
   const prompt =
     `SYSTEM INSTRUCTIONS:\n${systemInstruction}\n\n` +
-    `USER REQUEST:\nPlease sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote}`;
+    `USER REQUEST:\n${image ? 'Analyze this clinical document/prescription image and extract the text. ' : ''}Please sanitize and translate the following clinical note into plain English. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote || (image ? 'Refer to attached clinical document image.' : '')}`;
 
   try {
-    const result = await model.generateContent(prompt);
+    const requestPayload: any = image
+      ? [
+          prompt,
+          {
+            inlineData: {
+              mimeType: image.mimeType,
+              data: image.base64Data,
+            },
+          },
+        ]
+      : prompt;
+
+    const result = await model.generateContent(requestPayload);
     const endTime = performance.now();
     const latencyMs = Math.round(endTime - startTime);
 
