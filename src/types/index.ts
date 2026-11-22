@@ -15,10 +15,17 @@ export interface RedactedPIIItem {
   originalRedactedType: string;
 }
 
+export interface MedicationSafetyAlert {
+  drug: string;
+  rule: string;
+  severity: 'critical' | 'warning';
+}
+
 export interface Stage1Result {
   sanitizedText: string;
   detectedPiiTypes: string[];
   simplifiedSummary: string;
+  medicationAlerts: MedicationSafetyAlert[];
   telemetry: TelemetryData;
 }
 
@@ -49,6 +56,7 @@ export interface SavedBrief {
   simplifiedSummary: string;
   sanitizedClinicalText: string;
   detectedPiiTypes: string[];
+  medicationAlerts?: MedicationSafetyAlert[];
   checklist: DayPlan[];
   warningSigns: WarningSign[];
   doctorQuestions: string[];

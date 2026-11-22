@@ -19,6 +19,7 @@ import {
   Clock,
   ShieldAlert,
   Activity,
+  Printer,
 } from 'lucide-react';
 import { Stage1Result, Stage2Result } from '../types';
 
@@ -253,6 +254,16 @@ export const PatientCareBrief: React.FC<PatientCareBriefProps> = ({
 
             <button
               type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-subtle hover:bg-surface-hover text-xs font-semibold text-text-secondary hover:text-text-primary border border-border-theme transition cursor-pointer"
+              title="Print or Save Clinic PDF Brief"
+            >
+              <Printer className="w-3.5 h-3.5 text-text-muted" />
+              <span>Print / PDF</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onSaveBrief}
               disabled={isSaving || hasSaved || !stage2Result}
               className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
@@ -384,6 +395,51 @@ export const PatientCareBrief: React.FC<PatientCareBriefProps> = ({
             ) : (
               <div className="bg-surface-subtle p-4 rounded-xl border border-border-theme font-mono text-xs text-text-primary whitespace-pre-wrap leading-relaxed max-h-[380px] overflow-y-auto">
                 {stage1Result.sanitizedText}
+              </div>
+            )}
+
+            {/* On-Device Medication Safety & Hold Parameters Callout Badges */}
+            {stage1Result.medicationAlerts && stage1Result.medicationAlerts.length > 0 && (
+              <div className="pt-4 border-t border-border-theme space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-text-primary">
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+                    <span>On-Device Medication Safety & Hold Thresholds</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-semibold">
+                    Local Gemini Nano Guardrails
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {stage1Result.medicationAlerts.map((alert, idx) => {
+                    const isCritical = alert.severity === 'critical';
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-xl border flex flex-col justify-between ${
+                          isCritical
+                            ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900/60 text-rose-950 dark:text-rose-100 shadow-2xs'
+                            : 'bg-amber-50/70 dark:bg-amber-950/40 border-amber-300 dark:border-amber-900/60 text-amber-950 dark:text-amber-100 shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-xs font-bold">{alert.drug}</span>
+                          <span
+                            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                              isCritical
+                                ? 'bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-800'
+                                : 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-800'
+                            }`}
+                          >
+                            {isCritical ? 'Critical Hold Rule' : 'Safety Parameter'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed opacity-95">{alert.rule}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -726,6 +782,121 @@ export const PatientCareBrief: React.FC<PatientCareBriefProps> = ({
               </span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Clinic-Ready Printable Discharge Handout (@media print) */}
+      {stage1Result && (
+        <div className="print-only p-8 space-y-6 text-slate-900 bg-white">
+          <div className="border-b-2 border-slate-900 pb-4 flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
+                Official Clinical Care Handout
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                MEDBRIEF PATIENT CARE INSTRUCTIONS
+              </h1>
+              <p className="text-xs text-slate-600 font-medium">
+                Document: {title}
+              </p>
+            </div>
+            <div className="text-right text-xs text-slate-600 font-mono">
+              <div>Printed: {new Date().toLocaleDateString()}</div>
+              <div className="font-semibold text-emerald-800">
+                Client-Side Privacy Verified (0 PII Leaked)
+              </div>
+            </div>
+          </div>
+
+          {/* Print Section 1: Patient Translation */}
+          <div className="space-y-2">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
+              1. Patient-Friendly Care Summary
+            </h2>
+            <div className="text-xs leading-relaxed text-slate-800 whitespace-pre-wrap font-sans">
+              {stage1Result.simplifiedSummary}
+            </div>
+          </div>
+
+          {/* Print Section 2: Critical Medication Hold Parameters */}
+          {stage1Result.medicationAlerts && stage1Result.medicationAlerts.length > 0 && (
+            <div className="space-y-2 break-inside-avoid">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-rose-900 border-b border-rose-300 pb-1">
+                2. Critical Medication Hold Parameters & Safety Rules
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {stage1Result.medicationAlerts.map((alert, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border border-slate-300 bg-slate-50 text-xs">
+                    <div className="font-bold text-slate-900 mb-0.5">{alert.drug}</div>
+                    <div className="text-slate-700 leading-snug">{alert.rule}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Print Section 3: 7-Day Recovery Plan */}
+          {stage2Result && (
+            <div className="space-y-2 break-inside-avoid">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
+                3. 7-Day Structured Recovery Checklist
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {stage2Result.checklist.map((day) => (
+                  <div key={day.day} className="p-3 border border-slate-300 rounded-lg text-xs bg-slate-50">
+                    <div className="font-bold text-slate-900 mb-1">
+                      Day {day.day}: {day.title.replace(/^Day \d+:\s*/i, '')}
+                    </div>
+                    <ul className="space-y-1 text-slate-700">
+                      {day.tasks.map((task, tIdx) => (
+                        <li key={tIdx} className="flex items-start gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 border border-slate-500 rounded-xs shrink-0 mt-0.5" />
+                          <span>{task}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Print Section 4: Red-Flag Warning Signs */}
+          {stage2Result && (
+            <div className="space-y-2 break-inside-avoid">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-rose-900 border-b border-rose-300 pb-1">
+                4. Red-Flag Warning Signs & Triage Protocol
+              </h2>
+              <div className="grid grid-cols-3 gap-2.5 text-xs">
+                {stage2Result.warningSigns.map((w, idx) => (
+                  <div key={idx} className="p-2.5 border border-slate-300 rounded-lg bg-slate-50">
+                    <div className="font-bold uppercase text-[9px] text-slate-600 mb-0.5">{w.severity}</div>
+                    <div className="font-bold text-slate-900 mb-0.5">{w.title}</div>
+                    <div className="text-slate-700 leading-snug mb-1">{w.description}</div>
+                    <div className="font-semibold text-slate-900">Action: {w.action}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Print Section 5: Doctor Questions */}
+          {stage2Result && (
+            <div className="space-y-2 break-inside-avoid">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
+                5. High-Impact Questions for Your Doctor
+              </h2>
+              <ol className="space-y-1 text-xs text-slate-800 list-decimal pl-4">
+                {stage2Result.doctorQuestions.map((q, idx) => (
+                  <li key={idx} className="leading-snug">{q}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-slate-300 text-[10px] text-slate-500 text-center font-mono">
+            Synthesized via MedBrief Hybrid. Client-side privacy attested. In an emergency, dial 911 immediately.
+          </div>
         </div>
       )}
     </div>

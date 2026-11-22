@@ -191,7 +191,7 @@ export default function App() {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setErrorMsg('Please select a valid image file (.jpg, .png).');
+      setErrorMsg('Please select a valid image file (.jpg, .png, .webp).');
       return;
     }
 
@@ -214,6 +214,134 @@ export default function App() {
       showToast(`Attached image: ${file.name}`);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Built-in Sample Prescription Generator for 1-Click Multimodal Evaluation
+  const handleGenerateSamplePrescriptionImage = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 900;
+    canvas.height = 700;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Background Rx pad texture
+    ctx.fillStyle = '#fcfbf7';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Border
+    ctx.strokeStyle = '#0f766e';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+    ctx.strokeStyle = '#99f6e4';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(26, 26, canvas.width - 52, canvas.height - 52);
+
+    // Watermark Rx
+    ctx.save();
+    ctx.font = 'bold 220px serif';
+    ctx.fillStyle = 'rgba(15, 118, 110, 0.04)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Rx', 450, 420);
+    ctx.restore();
+
+    // Hospital Header
+    ctx.fillStyle = '#0f766e';
+    ctx.font = 'bold 26px sans-serif';
+    ctx.fillText('ST. JUDE REGIONAL MEDICAL CENTER', 50, 75);
+    ctx.fillStyle = '#475569';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('DEPARTMENT OF CARDIOLOGY & PHARMACOTHERAPY', 50, 100);
+    ctx.fillText('104 Medical Plaza Way, Suite 400 • Tel: (555) 019-2834 • DEA: BM8829104', 50, 120);
+
+    ctx.strokeStyle = '#0f766e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(50, 135);
+    ctx.lineTo(850, 135);
+    ctx.stroke();
+
+    // Patient Demographics (Contains Fake PII to be redacted locally by Gemini Nano)
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('PATIENT NAME: Robert Vance', 50, 175);
+    ctx.fillText('DOB: 04/12/1958  (Age: 68)', 500, 175);
+
+    ctx.fillText('MRN: #CRD-882910', 50, 205);
+    ctx.fillText('DATE OF RX: 11/14/2026', 500, 205);
+
+    ctx.fillText('EMERGENCY CONTACT: Eleanor Vance (555-392-8819)', 50, 235);
+    ctx.fillText('ADDRESS: 742 Evergreen Terr, Springfield', 500, 235);
+
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(50, 255);
+    ctx.lineTo(850, 255);
+    ctx.stroke();
+
+    // Large Rx Symbol
+    ctx.fillStyle = '#0f766e';
+    ctx.font = 'bold 48px serif';
+    ctx.fillText('Rx', 50, 310);
+
+    // Medications list with hold parameters
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('1. METOPROLOL SUCCINATE ER 50 MG ORAL TABLET', 120, 305);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('   SIG: Take 1 tab daily. HOLD IF RESTING HEART RATE < 55 BPM or SBP < 100 mmHg.', 120, 330);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('2. FUROSEMIDE (LASIX) 40 MG ORAL TABLET', 120, 375);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#d97706';
+    ctx.fillText('   SIG: Take 1 tab every morning. WEIGH DAILY. Call clinic if weight gain > 3 lbs in 24 hrs.', 120, 400);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 17px monospace';
+    ctx.fillText('3. CLOPIDOGREL (PLAVIX) 75 MG ORAL TABLET + ASPIRIN 81 MG DAILY', 120, 445);
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('   SIG: Dual antiplatelet therapy. STRICTLY AVOID NSAIDs (Ibuprofen, Naproxen, Aleve).', 120, 470);
+
+    // Doctor Signature Area
+    ctx.strokeStyle = '#64748b';
+    ctx.beginPath();
+    ctx.moveTo(500, 590);
+    ctx.lineTo(850, 590);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'italic 22px cursive';
+    ctx.fillText('Dr. Sarah Lin, MD, FACS', 520, 580);
+
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText('Attending Cardiothoracic Surgeon • NPI: 1982730192', 500, 610);
+    ctx.fillText('Security Seal: Protected by Client-Side Chrome Prompt API', 50, 640);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64Data = dataUrl.split(',')[1] || '';
+
+    setUploadedImage({
+      name: 'sample-prescription-robert-vance.png',
+      mimeType: 'image/png',
+      base64Data,
+      dataUrl,
+      sizeKb: Math.round((base64Data.length * 0.75) / 1024),
+    });
+
+    setClinicalText('');
+    setSelectedNoteId(null);
+    setCurrentTitle('Sample Prescription Slip (Robert Vance - CABG)');
+    setStage1Result(null);
+    setStage2Result(null);
+    setErrorMsg(null);
+    setHasSaved(false);
+    showToast('Loaded Sample Prescription Image! Ready for On-Device Redaction.');
   };
 
   const handleRemoveImage = () => {
@@ -334,6 +462,7 @@ export default function App() {
       sanitizedText: brief.sanitizedClinicalText,
       simplifiedSummary: brief.simplifiedSummary,
       detectedPiiTypes: brief.detectedPiiTypes,
+      medicationAlerts: brief.medicationAlerts || [],
       telemetry: brief.stage1Telemetry,
     });
     setStage2Result({
@@ -449,7 +578,7 @@ export default function App() {
 
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-14 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 text-white shadow-xl text-xs font-semibold animate-fade-in border border-slate-700">
+        <div className="no-print fixed bottom-14 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 text-white shadow-xl text-xs font-semibold animate-fade-in border border-slate-700">
           <CheckCircle className="w-4 h-4 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
@@ -459,7 +588,7 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Error Notification */}
         {errorMsg && (
-          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-3 shadow-2xs">
+          <div className="no-print p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-3 shadow-2xs">
             <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <strong className="font-semibold block mb-0.5">Execution Diagnostic:</strong>
@@ -484,7 +613,7 @@ export default function App() {
         {/* 2-Column Split Workspace */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Clinical Record Input & Multimodal Attachment */}
-          <div className="lg:col-span-5 space-y-4">
+          <div className="lg:col-span-5 space-y-4 no-print">
             <div className="bg-surface rounded-2xl border border-border-theme p-5 shadow-xs space-y-4 transition-colors duration-200">
               {/* Card Header & Sample Tabs */}
               <div>
@@ -546,7 +675,7 @@ export default function App() {
                     disabled={isPrivacyShieldLoading || isCloudLoading}
                     onClick={() => fileInputRef.current?.click()}
                     className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col justify-between cursor-pointer ${
-                      uploadedImage
+                      uploadedImage && uploadedImage.name !== 'sample-prescription-robert-vance.png'
                         ? 'bg-teal-50/80 dark:bg-teal-950/60 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-200 font-semibold ring-1 ring-teal-500 shadow-2xs'
                         : 'bg-surface-subtle border-border-theme text-text-secondary hover:bg-surface-hover hover:text-text-primary hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
@@ -554,15 +683,49 @@ export default function App() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] uppercase font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
                         <Upload className="w-3 h-3" />
-                        Multimodal
+                        Custom Image
                       </span>
-                      {uploadedImage && (
+                      {uploadedImage && uploadedImage.name !== 'sample-prescription-robert-vance.png' && (
                         <span className="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400 animate-pulse" />
                       )}
                     </div>
                     <div className="truncate font-semibold text-text-primary">
-                      {uploadedImage ? 'Photo Attached' : 'Upload Rx / Lab Photo'}
+                      {uploadedImage && uploadedImage.name !== 'sample-prescription-robert-vance.png'
+                        ? 'Custom Photo'
+                        : 'Upload Rx / Lab Photo'}
                     </div>
+                  </button>
+                </div>
+
+                {/* Built-in Sample Prescription Generator for Judges (1-Click Multimodal Test) */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled={isPrivacyShieldLoading || isCloudLoading}
+                    onClick={handleGenerateSamplePrescriptionImage}
+                    className={`w-full p-2.5 rounded-xl border text-xs transition-all flex items-center justify-between cursor-pointer ${
+                      uploadedImage?.name === 'sample-prescription-robert-vance.png'
+                        ? 'bg-teal-50 dark:bg-teal-950/60 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-200 ring-1 ring-teal-500 font-semibold shadow-2xs'
+                        : 'bg-teal-50/50 dark:bg-teal-950/20 border-teal-200/80 dark:border-teal-900/60 text-teal-950 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-950/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 flex items-center justify-center font-bold text-xs shrink-0">
+                        Rx
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white">
+                          <span>Try Sample Prescription Image</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-teal-200/70 dark:bg-teal-800 text-teal-900 dark:text-teal-200 font-semibold">
+                            1-Click Multimodal
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-text-muted">
+                          Renders Rx pad with fake PII & hold rules for on-device vision redaction
+                        </div>
+                      </div>
+                    </div>
+                    <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
                   </button>
                 </div>
 

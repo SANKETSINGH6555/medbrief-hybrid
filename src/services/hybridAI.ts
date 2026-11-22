@@ -23,6 +23,7 @@ import {
   WarningSign,
   TelemetryData,
   UploadedImage,
+  MedicationSafetyAlert,
 } from '../types/index';
 
 /**
@@ -147,6 +148,101 @@ export function scrubPIIDeterministic(text: string): {
  */
 export function detectPIITypes(text: string): string[] {
   return scrubPIIDeterministic(text).detectedPiiTypes;
+}
+
+/**
+ * Extracts critical medication hold rules and safety thresholds
+ */
+export function extractMedicationSafetyAlerts(sourceText: string, summaryText: string): MedicationSafetyAlert[] {
+  const alerts: MedicationSafetyAlert[] = [];
+  const combined = `${sourceText} ${summaryText}`.toLowerCase();
+
+  // 1. Beta-Blockers (Metoprolol, Carvedilol, Atenolol)
+  if (
+    combined.includes('metoprolol') ||
+    combined.includes('carvedilol') ||
+    combined.includes('beta-blocker') ||
+    combined.includes('lopressor') ||
+    combined.includes('toprol')
+  ) {
+    alerts.push({
+      drug: 'Metoprolol / Beta-Blocker',
+      rule: 'Hold medication if resting heart rate is below 55 bpm or systolic BP < 100 mmHg. Check pulse daily before taking.',
+      severity: 'critical',
+    });
+  }
+
+  // 2. Diuretics (Furosemide / Lasix / Torsemide)
+  if (
+    combined.includes('furosemide') ||
+    combined.includes('lasix') ||
+    combined.includes('diuretic') ||
+    combined.includes('fluid retention') ||
+    combined.includes('water pill')
+  ) {
+    alerts.push({
+      drug: 'Furosemide (Lasix)',
+      rule: 'Weigh every morning after voiding. Notify doctor immediately if weight increases > 3 lbs in 24 hours. Hold if severely dehydrated or dizzy.',
+      severity: 'warning',
+    });
+  }
+
+  // 3. Dual Antiplatelet Therapy (Aspirin, Clopidogrel, Plavix)
+  if (
+    combined.includes('clopidogrel') ||
+    combined.includes('plavix') ||
+    (combined.includes('aspirin') && (combined.includes('antiplatelet') || combined.includes('dapt') || combined.includes('cabg')))
+  ) {
+    alerts.push({
+      drug: 'Dual Antiplatelet (Aspirin + Plavix)',
+      rule: 'Strictly avoid OTC NSAIDs (Ibuprofen, Motrin, Naproxen, Aleve) due to major GI bleed risk. Use Acetaminophen for mild pain.',
+      severity: 'critical',
+    });
+  }
+
+  // 4. Diabetes / Metformin / SGLT2 (Empagliflozin, Jardiance)
+  if (
+    combined.includes('metformin') ||
+    combined.includes('glucophage') ||
+    combined.includes('empagliflozin') ||
+    combined.includes('jardiance')
+  ) {
+    alerts.push({
+      drug: 'Metformin / SGLT2 Inhibitor',
+      rule: 'Hold Metformin 48 hours prior to and after any CT scan using IV contrast dye or during severe acute dehydration to protect kidney function.',
+      severity: 'critical',
+    });
+  }
+
+  // 5. ACE-Inhibitors / ARBs (Lisinopril, Losartan)
+  if (
+    combined.includes('lisinopril') ||
+    combined.includes('losartan') ||
+    combined.includes('enalapril')
+  ) {
+    alerts.push({
+      drug: 'Lisinopril / ACE-Inhibitor',
+      rule: 'Monitor for sudden facial, lip, or tongue swelling (angioedema - seek immediate ER care) or persistent dry hacking cough.',
+      severity: 'warning',
+    });
+  }
+
+  // 6. Anticoagulants (Warfarin, Apixaban, Eliquis)
+  if (
+    combined.includes('eliquis') ||
+    combined.includes('apixaban') ||
+    combined.includes('warfarin') ||
+    combined.includes('coumadin') ||
+    combined.includes('xarelto')
+  ) {
+    alerts.push({
+      drug: 'Anticoagulant (Blood Thinner)',
+      rule: 'Do not miss doses. Promptly report black tarry stools, pink/red urine, or unusually large bruises. Avoid sudden diet shifts in vitamin K if on Warfarin.',
+      severity: 'critical',
+    });
+  }
+
+  return alerts;
 }
 
 /**
@@ -278,10 +374,17 @@ export async function runPrivacyShieldStage(
       modelName: isSourceOnDevice ? 'Gemini Nano (Local NPU/Wasm)' : 'Gemini 3.8 Flash (Cloud AI)',
     };
 
+    // Extract on-device medication safety rules & hold parameters
+    const medicationAlerts = extractMedicationSafetyAlerts(
+      rawClinicalNote || (image ? image.name : ''),
+      scrubbedSummary.scrubbedText
+    );
+
     return {
       sanitizedText: scrubbedSanitized.scrubbedText,
       detectedPiiTypes: combinedPiiTypes,
       simplifiedSummary: scrubbedSummary.scrubbedText,
+      medicationAlerts,
       telemetry,
     };
   } catch (err: unknown) {
@@ -475,6 +578,7 @@ export async function saveBriefToFirestore(
     simplifiedSummary: stage1.simplifiedSummary,
     sanitizedClinicalText: stage1.sanitizedText,
     detectedPiiTypes: stage1.detectedPiiTypes,
+    medicationAlerts: stage1.medicationAlerts || [],
     checklist: stage2.checklist,
     warningSigns: stage2.warningSigns,
     doctorQuestions: stage2.doctorQuestions,
@@ -502,6 +606,7 @@ export async function loadUserBriefs(userId: string): Promise<SavedBrief[]> {
         simplifiedSummary: data.simplifiedSummary || '',
         sanitizedClinicalText: data.sanitizedClinicalText || '',
         detectedPiiTypes: data.detectedPiiTypes || [],
+        medicationAlerts: data.medicationAlerts || [],
         checklist: data.checklist || [],
         warningSigns: data.warningSigns || [],
         doctorQuestions: data.doctorQuestions || [],
