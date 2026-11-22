@@ -55,25 +55,25 @@ export const ChromeGuideModal: React.FC<ChromeGuideModalProps> = ({ isOpen, onCl
           onClick={onClose}
         />
 
-        <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl">
+        <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-surface border border-border-theme rounded-2xl shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 flex items-center justify-center border border-teal-100 dark:border-teal-800">
                 <Cpu className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-text-primary">
                   Chrome Gemini Nano Verification Guide
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-text-muted">
                   How judges can verify on-device inference for #BuildHybridAI 2026
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-hover transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -84,7 +84,7 @@ export const ChromeGuideModal: React.FC<ChromeGuideModalProps> = ({ isOpen, onCl
             <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="font-semibold text-teal-800 dark:text-teal-300">Seamless Auto-Hybrid Fallback Active:</span>
-              <p className="text-slate-600 dark:text-slate-300">
+              <p className="text-text-secondary">
                 If you are testing this on a browser without Gemini Nano flags enabled, MedBrief Hybrid automatically routes requests to Cloud Gemini via Firebase AI Logic. No crashes or manual configuration needed.
               </p>
             </div>
@@ -95,24 +95,24 @@ export const ChromeGuideModal: React.FC<ChromeGuideModalProps> = ({ isOpen, onCl
             {steps.map((step) => (
               <div
                 key={step.id}
-                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition"
+                className="p-3.5 rounded-xl bg-surface-subtle border border-border-theme hover:border-slate-300 dark:hover:border-slate-700 transition"
               >
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                  <span className="text-xs font-semibold text-text-primary">
                     {step.title}
                   </span>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-semibold">
                     {step.setting}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mb-2.5">{step.desc}</p>
-                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <code className="text-xs font-mono text-slate-700 dark:text-slate-300 truncate select-all">
+                <p className="text-xs text-text-secondary mb-2.5">{step.desc}</p>
+                <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-surface border border-border-theme">
+                  <code className="text-xs font-mono text-text-primary truncate select-all">
                     {step.url}
                   </code>
                   <button
                     onClick={() => copyToClipboard(step.url, step.id)}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition shrink-0 cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-surface-subtle hover:bg-surface-hover text-text-secondary hover:text-text-primary border border-border-theme transition shrink-0 cursor-pointer"
                   >
                     {copiedKey === step.id ? (
                       <>
@@ -132,13 +132,13 @@ export const ChromeGuideModal: React.FC<ChromeGuideModalProps> = ({ isOpen, onCl
           </div>
 
           {/* Footer note */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="pt-3 border-t border-border-subtle flex items-center justify-between">
+            <span className="text-[11px] text-text-muted">
               Restart Chrome after changing flags for changes to take effect.
             </span>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-teal-600 text-white text-xs font-semibold hover:bg-slate-800 dark:hover:bg-teal-500 transition cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold transition cursor-pointer"
             >
               Done
             </button>

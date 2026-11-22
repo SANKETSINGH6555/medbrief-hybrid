@@ -23,8 +23,6 @@ import {
   HeartPulse,
   Stethoscope,
   Pill,
-  Trash2,
-  FileCode,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { PatientCareBrief } from './components/PatientCareBrief';
@@ -62,18 +60,22 @@ export default function App() {
       if (savedTheme === 'light' || savedTheme === 'dark') {
         return savedTheme;
       }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    return 'light';
+    return 'light'; // Default to light clinical mode
   });
 
-  // Sync theme with HTML class
+  // Sync theme with HTML root and body
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     if (theme === 'dark') {
       root.classList.add('dark');
+      body.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
     } else {
       root.classList.remove('dark');
+      body.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
     }
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -430,7 +432,7 @@ export default function App() {
   const totalRedactedCount = stage1Result?.detectedPiiTypes.length || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans pb-16 transition-colors duration-200">
+    <div className="min-h-screen bg-canvas text-text-primary flex flex-col font-sans pb-16 transition-colors duration-200">
       {/* Top Header */}
       <Header
         routingMode={routingMode}
@@ -483,19 +485,19 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Clinical Record Input & Multimodal Attachment */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs dark:shadow-xl space-y-4 transition-colors duration-200">
+            <div className="bg-surface rounded-2xl border border-border-theme p-5 shadow-xs space-y-4 transition-colors duration-200">
               {/* Card Header & Sample Tabs */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-400 flex items-center justify-center border border-teal-200/80 dark:border-teal-800">
+                    <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-400 flex items-center justify-center border border-teal-200 dark:border-teal-800">
                       <FileText className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      <h3 className="text-sm font-bold text-text-primary">
                         Clinical Record Input
                       </h3>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="text-[11px] text-text-muted">
                         EHR, Discharge Summary, or Prescription
                       </span>
                     </div>
@@ -520,12 +522,12 @@ export default function App() {
                         onClick={() => handleSelectSampleNote(sample)}
                         className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-100 font-semibold ring-1 ring-teal-600 dark:ring-teal-500 shadow-2xs'
-                            : 'bg-slate-50/70 dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                            ? 'bg-teal-50/80 dark:bg-teal-950/60 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-200 font-semibold ring-1 ring-teal-500 shadow-2xs'
+                            : 'bg-surface-subtle border-border-theme text-text-secondary hover:bg-surface-hover hover:text-text-primary hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <span className="text-[10px] uppercase font-bold text-text-muted flex items-center gap-1">
                             {getIcon()}
                             {sample.category}
                           </span>
@@ -533,7 +535,7 @@ export default function App() {
                             <span className="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400 animate-pulse" />
                           )}
                         </div>
-                        <div className="truncate font-semibold text-slate-900 dark:text-slate-100">{sample.title}</div>
+                        <div className="truncate font-semibold text-text-primary">{sample.title}</div>
                       </button>
                     );
                   })}
@@ -545,8 +547,8 @@ export default function App() {
                     onClick={() => fileInputRef.current?.click()}
                     className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col justify-between cursor-pointer ${
                       uploadedImage
-                        ? 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-100 font-semibold ring-1 ring-teal-600 dark:ring-teal-500 shadow-2xs'
-                        : 'bg-slate-50/70 dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                        ? 'bg-teal-50/80 dark:bg-teal-950/60 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-200 font-semibold ring-1 ring-teal-500 shadow-2xs'
+                        : 'bg-surface-subtle border-border-theme text-text-secondary hover:bg-surface-hover hover:text-text-primary hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -558,7 +560,7 @@ export default function App() {
                         <span className="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400 animate-pulse" />
                       )}
                     </div>
-                    <div className="truncate font-semibold text-slate-900 dark:text-slate-100">
+                    <div className="truncate font-semibold text-text-primary">
                       {uploadedImage ? 'Photo Attached' : 'Upload Rx / Lab Photo'}
                     </div>
                   </button>
@@ -576,18 +578,18 @@ export default function App() {
 
               {/* Uploaded Image Preview Card (if attached) */}
               {uploadedImage && (
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="p-3.5 rounded-xl bg-surface-subtle border border-border-theme flex items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={uploadedImage.dataUrl}
                       alt="Prescription Preview"
-                      className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
+                      className="w-12 h-12 object-cover rounded-lg border border-border-theme shrink-0 shadow-xs"
                     />
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      <div className="text-xs font-bold text-text-primary truncate">
                         {uploadedImage.name}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      <div className="text-[11px] text-text-muted font-mono">
                         {uploadedImage.sizeKb} KB · On-Device Vision Redaction
                       </div>
                     </div>
@@ -596,7 +598,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                     title="Remove image"
                   >
                     <X className="w-4 h-4" />
@@ -606,8 +608,8 @@ export default function App() {
 
               {/* Textarea Input */}
               <div>
-                <div className="flex items-center justify-between mb-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <div className="flex items-center justify-between mb-1.5 text-xs text-text-muted">
+                  <span className="font-semibold text-text-secondary">
                     Clinical Note Verbatim
                   </span>
                   <div className="flex items-center gap-2 font-mono tabular-nums text-[11px]">
@@ -626,7 +628,7 @@ export default function App() {
                     setSelectedNoteId(null);
                   }}
                   placeholder="Paste clinical note, discharge summary, or medication list here..."
-                  className="w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-3.5 font-mono text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-teal-600/30 dark:focus:ring-teal-500/30 focus:border-teal-600 dark:focus:border-teal-500 transition leading-relaxed resize-y shadow-2xs"
+                  className="w-full rounded-xl bg-surface-subtle border border-border-theme p-3.5 font-mono text-xs text-text-primary focus:bg-surface focus:outline-none focus:ring-2 focus:ring-teal-600/30 focus:border-teal-600 transition leading-relaxed resize-y shadow-2xs"
                 />
               </div>
 
@@ -653,8 +655,8 @@ export default function App() {
               )}
 
               {/* Action Bar */}
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <div className="pt-2 border-t border-border-theme flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-text-muted">
                   <Lock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                   <span>100% On-Device Boundary</span>
                 </div>
@@ -667,7 +669,7 @@ export default function App() {
                     isCloudLoading ||
                     (!clinicalText.trim() && !uploadedImage)
                   }
-                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-[0.99] transition disabled:opacity-50 cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 active:bg-teal-900 text-white font-bold text-xs shadow-sm hover:shadow transition disabled:opacity-50 cursor-pointer shrink-0"
                 >
                   {isPrivacyShieldLoading ? (
                     <>
