@@ -163,9 +163,37 @@ export async function runPrivacyShieldStage(
   // Pre-scrub deterministic check to establish baseline detected PII
   const preScrub = scrubPIIDeterministic(rawClinicalNote);
 
+  const systemInstruction =
+    'You are the On-Device Privacy Shield & Medical Translator for MedBrief Hybrid. Always respond in clear English.\n\n' +
+    'PRIMARY DIRECTIVE 1: STRICT PII SANITIZATION\n' +
+    '- Strip all patient names, doctor names, clinicians, and emergency contacts. Replace them strictly with [REDACTED_NAME].\n' +
+    '- Strip all exact dates (birthdates, admission dates, surgery dates, discharge dates, follow-up appointment dates). Replace them strictly with [REDACTED_DATE].\n' +
+    '- Strip all Medical Record Numbers (MRNs), health IDs, phone numbers, and addresses. Replace them strictly with [REDACTED_ID].\n' +
+    '- Never leak any raw name, exact date, MRN, or phone number in the output.\n\n' +
+    'PRIMARY DIRECTIVE 2: HIGH-ACCURACY MEDICAL TRANSLATION (ZERO HALLUCINATION & ZERO SPECULATION)\n' +
+    '- Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text.\n' +
+    '- Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries.\n' +
+    '- "LIMA to LAD": Healthy chest wall artery redirected to bypass the heart\'s front blocked artery.\n' +
+    '- "SVG to OM1 / RCA / PDA": Leg vein graft used to bypass blocked arteries on the side and back of the heart.\n' +
+    '- "LVEF" (e.g. 42%): Left Ventricular Ejection Fraction = percentage of blood pumped per beat (normal 50-70%; 42% means heart pumping efficiency is mildly reduced and needs prescribed medications).\n' +
+    '- "Sternal Precautions & Pillow Splinting": Sternal precautions (no lifting >5 lbs, no pushing/pulling) protect the healing breastbone for 8 weeks. Splinting by hugging a heart pillow firmly against the chest supports the breastbone when coughing or sneezing to keep it stable and minimize sharp pain.\n' +
+    '- "Diuretics (e.g. Furosemide / Lasix)": Water pill prescribed as-needed for sudden fluid retention, leg/ankle swelling, or rapid weight gain (>3 lbs in 24 hours).\n' +
+    '- "Beta-Blockers (e.g. Metoprolol Succinate)": Slows heart rate and relaxes blood vessels; hold if heart rate <55.\n' +
+    '- "Dual Antiplatelet Therapy (Aspirin + Clopidogrel)": Two blood thinners working together to prevent blood clots in the new bypass blood vessels.\n' +
+    '- "Lipase & Pancreatitis": High digestive enzyme levels indicating acute inflammation of the pancreas.\n' +
+    '- "Choledocholithiasis": Gallstones that slipped into and blocked the common bile duct.\n' +
+    '- "NPO (Nothing by Mouth)": Strict pause on all food and liquids so the digestive organs can rest.\n' +
+    '- "ERCP": Scope procedure to remove gallstones lodged in the bile duct.\n' +
+    '- "Diabetes & CKD medications": Maintain good hydration; pause Metformin during dehydration or contrast dye scans to protect the kidneys.\n\n' +
+    'OUTPUT FORMAT:\n' +
+    '### SANITIZED CLINICAL TEXT\n' +
+    '(Verbatim clinical note where all names are [REDACTED_NAME], dates are [REDACTED_DATE], and MRNs/phones/IDs are [REDACTED_ID])\n\n' +
+    '### PATIENT-FRIENDLY SUMMARY\n' +
+    '(Warm, clear breakdown translating strictly what is in the note. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries. Never invent unrelated body parts or conditions)';
+
   // Instantiated on user interaction as required by Chrome Prompt API
+  // Configuration for in-cloud and on-device must be passed inside inCloudParams and onDeviceParams
   const model = getGenerativeModel(ai, {
-    model: 'gemini-3.8-flash',
     mode: inferenceMode,
     onDeviceParams: {
       outputLanguage: 'en',
@@ -176,34 +204,12 @@ export async function runPrivacyShieldStage(
     } as any,
     inCloudParams: {
       model: 'gemini-3.8-flash',
+      generationConfig: {
+        maxOutputTokens: 1024,
+        temperature: 0.3,
+      },
+      systemInstruction,
     },
-    systemInstruction:
-      'You are the On-Device Privacy Shield & Medical Translator for MedBrief Hybrid. Always respond in clear English.\n\n' +
-      'PRIMARY DIRECTIVE 1: STRICT PII SANITIZATION\n' +
-      '- Strip all patient names, doctor names, clinicians, and emergency contacts. Replace them strictly with [REDACTED_NAME].\n' +
-      '- Strip all exact dates (birthdates, admission dates, surgery dates, discharge dates, follow-up appointment dates). Replace them strictly with [REDACTED_DATE].\n' +
-      '- Strip all Medical Record Numbers (MRNs), health IDs, phone numbers, and addresses. Replace them strictly with [REDACTED_ID].\n' +
-      '- Never leak any raw name, exact date, MRN, or phone number in the output.\n\n' +
-      'PRIMARY DIRECTIVE 2: HIGH-ACCURACY MEDICAL TRANSLATION (ZERO HALLUCINATION & ZERO SPECULATION)\n' +
-      '- Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text.\n' +
-      '- Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries.\n' +
-      '- "LIMA to LAD": Healthy chest wall artery redirected to bypass the heart\'s front blocked artery.\n' +
-      '- "SVG to OM1 / RCA / PDA": Leg vein graft used to bypass blocked arteries on the side and back of the heart.\n' +
-      '- "LVEF" (e.g. 42%): Left Ventricular Ejection Fraction = percentage of blood pumped per beat (normal 50-70%; 42% means heart pumping efficiency is mildly reduced and needs prescribed medications).\n' +
-      '- "Sternal Precautions & Pillow Splinting": Sternal precautions (no lifting >5 lbs, no pushing/pulling) protect the healing breastbone for 8 weeks. Splinting by hugging a heart pillow firmly against the chest supports the breastbone when coughing or sneezing to keep it stable and minimize sharp pain.\n' +
-      '- "Diuretics (e.g. Furosemide / Lasix)": Water pill prescribed as-needed for sudden fluid retention, leg/ankle swelling, or rapid weight gain (>3 lbs in 24 hours).\n' +
-      '- "Beta-Blockers (e.g. Metoprolol Succinate)": Slows heart rate and relaxes blood vessels; hold if heart rate <55.\n' +
-      '- "Dual Antiplatelet Therapy (Aspirin + Clopidogrel)": Two blood thinners working together to prevent blood clots in the new bypass blood vessels.\n' +
-      '- "Lipase & Pancreatitis": High digestive enzyme levels indicating acute inflammation of the pancreas.\n' +
-      '- "Choledocholithiasis": Gallstones that slipped into and blocked the common bile duct.\n' +
-      '- "NPO (Nothing by Mouth)": Strict pause on all food and liquids so the digestive organs can rest.\n' +
-      '- "ERCP": Scope procedure to remove gallstones lodged in the bile duct.\n' +
-      '- "Diabetes & CKD medications": Maintain good hydration; pause Metformin during dehydration or contrast dye scans to protect the kidneys.\n\n' +
-      'OUTPUT FORMAT:\n' +
-      '### SANITIZED CLINICAL TEXT\n' +
-      '(Verbatim clinical note where all names are [REDACTED_NAME], dates are [REDACTED_DATE], and MRNs/phones/IDs are [REDACTED_ID])\n\n' +
-      '### PATIENT-FRIENDLY SUMMARY\n' +
-      '(Warm, clear breakdown translating strictly what is in the note. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries. Never invent unrelated body parts or conditions)',
   });
 
   const prompt = `Please sanitize and translate the following clinical note. Replace all PII with [REDACTED_NAME], [REDACTED_DATE], and [REDACTED_ID]. Translate ONLY the facts explicitly stated in the clinical note. Never invent or mention body parts or procedures (such as throat or nerves) not present in the source text. Explain CABG simply as heart bypass surgery that creates a new path for blood to flow around blocked heart arteries:\n\n${rawClinicalNote}`;
@@ -331,14 +337,18 @@ export async function runCloudRecoveryAnalyzerStage(
     rawText = '';
 
     const model = getGenerativeModel(ai, {
-      model: candidateModel,
       mode: InferenceMode.ONLY_IN_CLOUD,
-      generationConfig,
       inCloudParams: {
         model: candidateModel,
-        generationConfig,
+        generationConfig: {
+          maxOutputTokens: 1024,
+          temperature: 0.3,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
+        },
+        systemInstruction,
       },
-      systemInstruction,
     });
 
     try {
