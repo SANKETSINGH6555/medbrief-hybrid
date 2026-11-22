@@ -23,6 +23,8 @@ import {
   HeartPulse,
   Stethoscope,
   Pill,
+  Trash2,
+  FileCode,
 } from 'lucide-react';
 import { Header } from './components/Header';
 import { PatientCareBrief } from './components/PatientCareBrief';
@@ -53,6 +55,33 @@ import {
 } from './services/hybridAI';
 
 export default function App() {
+  // Theme State
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') {
+        return savedTheme;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  // Sync theme with HTML class
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // State
   const [routingMode, setRoutingMode] = useState<RoutingMode>('auto');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>('sample-cardio');
@@ -401,7 +430,7 @@ export default function App() {
   const totalRedactedCount = stage1Result?.detectedPiiTypes.length || 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans pb-16">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans pb-16 transition-colors duration-200">
       {/* Top Header */}
       <Header
         routingMode={routingMode}
@@ -412,11 +441,13 @@ export default function App() {
         savedBriefsCount={savedBriefs.length}
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Toast Notification */}
       {toastMsg && (
-        <div className="fixed bottom-14 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white shadow-xl text-xs font-semibold animate-fade-in border border-slate-700">
+        <div className="fixed bottom-14 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-800 text-white shadow-xl text-xs font-semibold animate-fade-in border border-slate-700">
           <CheckCircle className="w-4 h-4 text-emerald-400" />
           <span>{toastMsg}</span>
         </div>
@@ -426,11 +457,11 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Error Notification */}
         {errorMsg && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-3 shadow-2xs">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-3 shadow-2xs">
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <strong className="font-semibold block mb-0.5">Execution Diagnostic:</strong>
-              <p className="text-rose-700 leading-relaxed">{errorMsg}</p>
+              <p className="text-rose-700 dark:text-rose-300 leading-relaxed">{errorMsg}</p>
               {routingMode === 'only_on_device' && (
                 <button
                   type="button"
@@ -452,46 +483,57 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Clinical Record Input & Multimodal Attachment */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-xs dark:shadow-xl space-y-4 transition-colors duration-200">
               {/* Card Header & Sample Tabs */}
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-teal-700" />
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Clinical Record Input
-                    </h3>
+                    <div className="w-7 h-7 rounded-lg bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-400 flex items-center justify-center border border-teal-200/80 dark:border-teal-800">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                        Clinical Record Input
+                      </h3>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        EHR, Discharge Summary, or Prescription
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono">
-                    EHR / Discharge / Rx
-                  </span>
                 </div>
 
                 {/* 1-Click Sample Benchmarks + Upload Image Tab */}
-                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   {SAMPLE_CLINICAL_NOTES.map((sample) => {
                     const isSelected = selectedNoteId === sample.id;
+                    const getIcon = () => {
+                      if (sample.category === 'Cardiology') return <HeartPulse className="w-3.5 h-3.5 text-rose-500" />;
+                      if (sample.category === 'Emergency') return <Stethoscope className="w-3.5 h-3.5 text-amber-500" />;
+                      return <Pill className="w-3.5 h-3.5 text-teal-500" />;
+                    };
+
                     return (
                       <button
                         key={sample.id}
                         type="button"
                         disabled={isPrivacyShieldLoading || isCloudLoading}
                         onClick={() => handleSelectSampleNote(sample)}
-                        className={`text-left p-2 rounded-lg border text-xs transition-all ${
+                        className={`text-left p-2.5 rounded-xl border text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-teal-50 border-teal-600 text-teal-900 font-semibold ring-1 ring-teal-600'
-                            : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                            ? 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-100 font-semibold ring-1 ring-teal-600 dark:ring-teal-500 shadow-2xs'
+                            : 'bg-slate-50/70 dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] uppercase font-bold text-slate-500">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                            {getIcon()}
                             {sample.category}
                           </span>
                           {isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+                            <span className="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400 animate-pulse" />
                           )}
                         </div>
-                        <div className="truncate font-medium">{sample.title}</div>
+                        <div className="truncate font-semibold text-slate-900 dark:text-slate-100">{sample.title}</div>
                       </button>
                     );
                   })}
@@ -501,22 +543,22 @@ export default function App() {
                     type="button"
                     disabled={isPrivacyShieldLoading || isCloudLoading}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`text-left p-2 rounded-lg border text-xs transition-all flex flex-col justify-between ${
+                    className={`text-left p-2.5 rounded-xl border text-xs transition-all flex flex-col justify-between cursor-pointer ${
                       uploadedImage
-                        ? 'bg-teal-50 border-teal-600 text-teal-900 font-semibold ring-1 ring-teal-600'
-                        : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                        ? 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-600 dark:border-teal-500 text-teal-950 dark:text-teal-100 font-semibold ring-1 ring-teal-600 dark:ring-teal-500 shadow-2xs'
+                        : 'bg-slate-50/70 dark:bg-slate-850 border-slate-200/90 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] uppercase font-bold text-teal-700 flex items-center gap-1">
-                        <Upload className="w-2.5 h-2.5" />
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] uppercase font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
+                        <Upload className="w-3 h-3" />
                         Multimodal
                       </span>
                       {uploadedImage && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+                        <span className="w-2 h-2 rounded-full bg-teal-600 dark:bg-teal-400 animate-pulse" />
                       )}
                     </div>
-                    <div className="truncate font-medium">
+                    <div className="truncate font-semibold text-slate-900 dark:text-slate-100">
                       {uploadedImage ? 'Photo Attached' : 'Upload Rx / Lab Photo'}
                     </div>
                   </button>
@@ -534,19 +576,19 @@ export default function App() {
 
               {/* Uploaded Image Preview Card (if attached) */}
               {uploadedImage && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={uploadedImage.dataUrl}
                       alt="Prescription Preview"
-                      className="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0"
+                      className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs"
                     />
                     <div className="min-w-0">
-                      <div className="text-xs font-semibold text-slate-900 truncate">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {uploadedImage.name}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {uploadedImage.sizeKb} KB · On-Device Vision Analysis
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                        {uploadedImage.sizeKb} KB · On-Device Vision Redaction
                       </div>
                     </div>
                   </div>
@@ -554,7 +596,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                     title="Remove image"
                   >
                     <X className="w-4 h-4" />
@@ -564,10 +606,10 @@ export default function App() {
 
               {/* Textarea Input */}
               <div>
-                <div className="flex items-center justify-between mb-1.5 text-xs text-slate-500">
-                  <label htmlFor="clinical-notes" className="font-semibold text-slate-700">
-                    Clinical Text
-                  </label>
+                <div className="flex items-center justify-between mb-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    Clinical Note Verbatim
+                  </span>
                   <div className="flex items-center gap-2 font-mono tabular-nums text-[11px]">
                     <span>{clinicalText.length} chars</span>
                     <span>•</span>
@@ -584,34 +626,36 @@ export default function App() {
                     setSelectedNoteId(null);
                   }}
                   placeholder="Paste clinical note, discharge summary, or medication list here..."
-                  className="w-full rounded-xl bg-slate-50/60 border border-slate-200 p-3.5 font-mono text-xs text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-700/20 focus:border-teal-700 transition leading-relaxed resize-y"
+                  className="w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-3.5 font-mono text-xs text-slate-800 dark:text-slate-200 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-teal-600/30 dark:focus:ring-teal-500/30 focus:border-teal-600 dark:focus:border-teal-500 transition leading-relaxed resize-y shadow-2xs"
                 />
               </div>
 
               {/* Live PII Redaction Counter Pill (Appears after redaction) */}
               {stage1Result && (
-                <div className="p-3 rounded-xl bg-teal-50/70 border border-teal-200 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-teal-700 shrink-0" />
+                <div className="p-3.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 flex items-center justify-between gap-2 shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
                     <div>
-                      <span className="text-xs font-bold text-teal-900">
+                      <span className="text-xs font-bold text-teal-950 dark:text-teal-200">
                         {totalRedactedCount} Identifiers Stripped Locally
                       </span>
-                      <p className="text-[11px] text-teal-800">
-                        Zero patient identifiers transmitted to cloud services.
+                      <p className="text-[11px] text-teal-800 dark:text-teal-400">
+                        Zero patient names, dates, or MRNs transmitted to cloud services.
                       </p>
                     </div>
                   </div>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-teal-100 text-teal-800 font-semibold border border-teal-200">
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 font-semibold border border-teal-200 dark:border-teal-700">
                     Client Shield Active
                   </span>
                 </div>
               )}
 
               {/* Action Bar */}
-              <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <Lock className="w-3.5 h-3.5 text-teal-700 shrink-0" />
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Lock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                   <span>100% On-Device Boundary</span>
                 </div>
 
@@ -623,7 +667,7 @@ export default function App() {
                     isCloudLoading ||
                     (!clinicalText.trim() && !uploadedImage)
                   }
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs shadow-xs transition disabled:opacity-50 cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs shadow-md shadow-teal-600/20 active:scale-[0.99] transition disabled:opacity-50 cursor-pointer shrink-0"
                 >
                   {isPrivacyShieldLoading ? (
                     <>
